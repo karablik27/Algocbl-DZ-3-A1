@@ -1,0 +1,114 @@
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <random>
+
+int main() {
+  // Параметры кругов
+  double x[3] = {1.0, 1.5, 2.0};
+  double y[3] = {1.0, 2.0, 1.5};
+  double r[3] = {1.0, std::sqrt(5.0) / 2.0, std::sqrt(5.0) / 2.0};
+
+  // Точное значение площади
+  const double PI = 3.14159265358979323846;
+  double exact_area = 0.25 * PI + 1.25 * std::asin(0.8) - 1.0;
+
+  // Файл для записи результатов
+  std::ofstream outfile("results.csv");
+  outfile << "N,EstimatedAreaWide,RelativeErrorWide,EstimatedAreaNarrow,RelativeErrorNarrow\n";
+
+  // Генератор случайных чисел
+  std::mt19937 rng(100); // Фиксированное зерно для воспроизводимости
+
+  // Предварительный расчет квадратов радиусов
+  double r2[3];
+  for (int i = 0; i < 3; ++i) {
+    r2[i] = r[i] * r[i];
+  }
+
+  // Границы широкой области
+  double x_min_wide = std::min({x[0] - r[0], x[1] - r[1], x[2] - r[2]});
+  double x_max_wide = std::max({x[0] + r[0], x[1] + r[1], x[2] + r[2]});
+  double y_min_wide = std::min({y[0] - r[0], y[1] - r[1], y[2] - r[2]});
+  double y_max_wide = std::max({y[0] + r[0], y[1] + r[1], y[2] + r[2]});
+  double area_rectangle_wide = (x_max_wide - x_min_wide) * (y_max_wide - y_min_wide);
+
+  // Границы узкой области
+  double x_min_narrow = std::max({x[0] - r[0], x[1] - r[1], x[2] - r[2]});
+  double x_max_narrow = std::min({x[0] + r[0], x[1] + r[1], x[2] + r[2]});
+  double y_min_narrow = std::max({y[0] - r[0], y[1] - r[1], y[2] - r[2]});
+  double y_max_narrow = std::min({y[0] + r[0], y[1] + r[1], y[2] + r[2]});
+  double area_rectangle_narrow = (x_max_narrow - x_min_narrow) * (y_max_narrow - y_min_narrow);
+
+  // Проверка на валидность узкой области
+  if (area_rectangle_narrow <= 0) {
+    std::cerr << "Неверные границы узкой области. Проверьте входные данные.\n";
+    return 1;
+  }
+
+  // Цикл по количеству точек
+  for (int N = 100; N <= 100000; N += 500) {
+    // Широкая область
+    std::uniform_real_distribution<double> dist_x_wide(x_min_wide, x_max_wide);
+    std::uniform_real_distribution<double> dist_y_wide(y_min_wide, y_max_wide);
+    int count_inside_wide = 0;
+
+    for (int i = 0; i < N; ++i) {
+      double x0 = dist_x_wide(rng);
+      double y0 = dist_y_wide(rng);
+
+      bool inside_all = true;
+      for (int j = 0; j < 3; ++j) {
+        double dx = x0 - x[j];
+        double dy = y0 - y[j];
+        if (dx * dx + dy * dy > r2[j]) {
+          inside_all = false;
+          break;
+        }
+      }
+      if (inside_all) {
+        ++count_inside_wide;
+      }
+    }
+
+    double estimated_area_wide = (static_cast<double>(count_inside_wide) / N) * area_rectangle_wide;
+    double relative_error_wide = std::abs(estimated_area_wide - exact_area) / exact_area * 100.0;
+
+    // Узкая область
+    std::uniform_real_distribution<double> dist_x_narrow(x_min_narrow, x_max_narrow);
+    std::uniform_real_distribution<double> dist_y_narrow(y_min_narrow, y_max_narrow);
+    int count_inside_narrow = 0;
+
+    for (int i = 0; i < N; ++i) {
+      double x0 = dist_x_narrow(rng);
+      double y0 = dist_y_narrow(rng);
+
+      bool inside_all = true;
+      for (int j = 0; j < 3; ++j) {
+        double dx = x0 - x[j];
+        double dy = y0 - y[j];
+        if (dx * dx + dy * dy > r2[j]) {
+          inside_all = false;
+          break;
+        }
+      }
+      if (inside_all) {
+        ++count_inside_narrow;
+      }
+    }
+
+    double estimated_area_narrow = (static_cast<double>(count_inside_narrow) / N) * area_rectangle_narrow;
+    double relative_error_narrow = std::abs(estimated_area_narrow - exact_area) / exact_area * 100.0;
+
+    // Запись результатов в файл
+    outfile << N << ",";
+    outfile << std::fixed << std::setprecision(8) << estimated_area_wide << "," << relative_error_wide << ",";
+    outfile << estimated_area_narrow << "," << relative_error_narrow << "\n";
+  }
+
+  outfile.close();
+  std::cout << "Результаты сохранены в файл results.csv\n";
+  return 0;
+}
