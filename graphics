@@ -1,0 +1,30 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+data = pd.read_csv("/Users/verhovnyjmag/Desktop/results.csv")
+
+exact_area = 0.25 * np.pi + 1.25 * np.arcsin(0.8) - 1
+
+plt.figure(figsize=(12, 8))
+plt.plot(data['N'], data['EstimatedAreaWide'], label='Estimated Area (Wide)', linestyle='-', color='blue')
+plt.plot(data['N'], data['EstimatedAreaNarrow'], label='Estimated Area (Narrow)', linestyle='-', color='orange')
+plt.axhline(y=exact_area, color='green', linestyle='--', label='Exact Area')
+plt.xlabel('Number of Points (N)')
+plt.ylabel('Estimated Area')
+plt.title('Estimated Area vs Number of Points (N)')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(12, 8))
+plt.plot(data['N'], data['RelativeErrorWide'], label='Relative Error (Wide)', linestyle='-', color='blue')
+plt.plot(data['N'], data['RelativeErrorNarrow'], label='Relative Error (Narrow)', linestyle='-', color='orange')
+plt.xlabel('Number of Points (N)')
+plt.ylabel('Relative Error (%)')
+plt.title('Relative Error vs Number of Points (N)')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
